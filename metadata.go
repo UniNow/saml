@@ -58,6 +58,10 @@ type EntityDescriptor struct {
 	AdditionalMetadataLocations   []string `xml:"AdditionalMetadataLocation"`
 }
 
+type EntityDescriptorArray struct {
+	EntityDescriptorElements []EntityDescriptor `xml:"EntityDescriptor"`
+}
+
 // MarshalXML implements xml.Marshaler
 func (m EntityDescriptor) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	type Alias EntityDescriptor

@@ -49,6 +49,45 @@ func ParseMetadata(data []byte) (*saml.EntityDescriptor, error) {
 	return entity, nil
 }
 
+// Use this if metadataURL returns an array of EntityDescriptos
+func FetchMetadataByEntityID(ctx context.Context, httpClient *http.Client, metadataURL url.URL, entityID string) (*saml.EntityDescriptor, error) {
+	req, err := http.NewRequest("GET", metadataURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return nil, httperr.Response(*resp)
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	entities := &saml.EntityDescriptorArray{}
+
+	err = xml.Unmarshal(data, entities)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range entities.EntityDescriptorElements {
+		if entities.EntityDescriptorElements[i].EntityID == entityID {
+			return &entities.EntityDescriptorElements[i], nil
+		}
+	}
+
+	return nil, errors.New("entityid not found")
+}
+
 // FetchMetadata returns metadata from an IDP metadata URL.
 func FetchMetadata(ctx context.Context, httpClient *http.Client, metadataURL url.URL) (*saml.EntityDescriptor, error) {
 	req, err := http.NewRequest("GET", metadataURL.String(), nil)
